@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>NKS Ticker</title>
+<style>
+body { margin:0; background:transparent; font-family:Arial; }
+.wrapper { width:100%; height:240px; display:flex; flex-direction:column;
+ background:linear-gradient(90deg,#c51b2b,#9e0f17); color:#fff; padding:10px; box-sizing:border-box; }
+.header { display:flex; align-items:center; gap:15px; }
+.header img { height:60px; }
+.week { margin-left:auto; font-weight:bold; background:rgba(255,255,255,0.15); padding:6px 10px; border-radius:6px; }
+.tabs { display:flex; gap:10px; padding:10px 0; flex-wrap:wrap; }
+.tab { padding:6px 12px; border-radius:6px; cursor:pointer; opacity:0.6; font-weight:bold; }
+.tab.active { opacity:1; background:rgba(0,0,0,0.25); }
+.content { flex:1; background:rgba(0,0,0,0.1); padding:10px; border-radius:8px; overflow:auto; }
+.panel { display:none; }
+.panel.active { display:block; }
+.game { background:rgba(255,255,255,0.1); padding:8px; border-radius:6px; margin-bottom:6px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+ <div class="header">
+   <img src="https://lh3.googleusercontent.com/d/1XWCkS_g-dkocdBcrv4QbR3tzsog2T07_=s0"/>
+   <div><b>NKS Sports</b><br>High School Coverage</div>
+   <div class="week">Nov 16–22</div>
+ </div>
+
+ <div class="tabs" id="tabs"></div>
+ <div class="content" id="content"></div>
+</div>
+
+<script>
+const DATA = {
+  "Football": [
+    { home:"Beloit", away:"Concordia", home_score:"55", away_score:"48", live:true, period:"Q2", clock:"5:33" },
+    { home:"TMP", away:"Russell", home_score:"21", away_score:"14" }
+  ],
+
+  "Men's Basketball": [
+    { home:"Beloit", away:"Russell", home_score:"56", away_score:"49" },
+    { home:"TMP", away:"Ellsworth", home_score:"62", away_score:"58" }
+  ],
+
+  "Women's Basketball": [
+    { home:"Beloit", away:"Russell", home_score:"44", away_score:"39" },
+    { home:"Smith Center", away:"Phillipsburg", home_score:"41", away_score:"52" }
+  ],
+
+  "Baseball": [
+    { home:"Pawnee Heights", away:"Macksville", home_score:"5", away_score:"3" }
+  ],
+
+  "Softball": [
+    { home:"Beloit", away:"Smith Center", home_score:"7", away_score:"6" }
+  ],
+
+  "Volleyball": [
+    { home:"Ellis", away:"Hoxie", home_score:"3–1", away_score:"" }
+  ],
+
+  "Wrestling": [
+    { home:"Salina", away:"Hutchinson", home_score:"W:36", away_score:"" }
+  ],
+
+  "Upcoming Games": [
+    ["Football","Beloit vs Russell — Nov 18"],
+    ["Football","Phillipsburg vs Norton — Nov 19"],
+    ["Football","TMP vs Ellis — Nov 21"],
+    ["Basketball","TMP vs Phillipsburg — Dec 1"]
+  ]
+};
+
+const tabs = document.getElementById("tabs");
+const content = document.getElementById("content");
+const keys = Object.keys(DATA);
+
+keys.forEach((k,i)=>{
+ let t=document.createElement("div");
+ t.className="tab"+(i===0?" active":"");
+ t.innerText=k;
+ t.onclick=()=>showPanel(i);
+ tabs.appendChild(t);
+});
+
+function showPanel(i){
+ document.querySelectorAll(".tab").forEach((t,x)=>t.classList.toggle("active",x===i));
+ content.innerHTML="";
+ let key = keys[i];
+ let val = DATA[key];
+ let html="";
+
+ if(key==="Upcoming Games"){
+   html = val.map(v=>`<div class="game"><b>${v[0]}:</b> ${v[1]}</div>`).join("");
+ } else {
+   html = val.map(g=>{
+     let line = `<b>${g.home}</b> ${g.home_score} — ${g.away_score} <b>${g.away}</b>`;
+     if(g.live){
+       const info = [g.period||"", g.clock||""].filter(x=>x).join(" · ");
+       line += ` <span style="background:#e53935;color:#fff;padding:3px 8px;border-radius:12px;font-weight:bold;margin-left:10px;">LIVE — ${info}</span>`;
+     }
+     return `<div class="game">${line}</div>`;
+   }).join("");
+ }
+
+ let panel=document.createElement("div");
+ panel.className="panel active";
+ panel.innerHTML=html;
+ content.appendChild(panel);
+}
+
+showPanel(0);
+</script>
+</body>
+</html>
