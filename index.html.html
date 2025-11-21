@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>NKS Live Ticker</title>
+<style>
+  body { margin:0; background:transparent; font-family:Arial; }
+  .wrapper { width:100%; height:300px; display:flex; flex-direction:column;
+    background:linear-gradient(90deg,#c51b2b,#9e0f17); color:#fff; padding:10px; box-sizing:border-box; }
+  .header { display:flex; align-items:center; gap:15px; }
+  .header img { height:60px; }
+  .week { margin-left:auto; font-weight:bold; background:rgba(255,255,255,0.15); padding:6px 10px; border-radius:6px; }
+  .tabs { display:flex; gap:10px; padding:10px 0; flex-wrap:wrap; }
+  .tab { padding:6px 12px; border-radius:6px; cursor:pointer; opacity:0.6; font-weight:bold; }
+  .tab.active { opacity:1; background:rgba(0,0,0,0.25); }
+  .content { flex:1; background:rgba(0,0,0,0.1); padding:10px; border-radius:8px; overflow:auto; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .game { background:rgba(255,255,255,0.1); padding:8px; border-radius:6px; margin-bottom:6px; }
+</style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <img src="https://lh3.googleusercontent.com/d/1XWCkS_g-dkocdBcrv4QbR3tzsog2T07_=s0"/>
+      <div><b>NKS Sports</b><br>High School Coverage</div>
+      <div class="week">Loading...</div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+    <div class="content" id="content"></div>
+  </div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwuboZzoM-km0SaahRMIByBEzBG0o5x28ry1kzKaO1c1mDuZeysl9_qex0vikgZCFA/exec";
+
+let DATA = {};
+let UPCOMING = [];
+let WEEK_LABEL = "";
+let keys = [];
+
+function parseClock(t) {
+  if (!t || t === "") return "";
+  try {
+    const d = new Date(t);
+    let h = d.getHours();
+    let m = d.getMinutes();
+    if (h < 10) h = "0"+h;
+    if (m < 10) m = "0"+m;
+    return `${h}:${m}`;
+  } catch(e) { return ""; }
+}
+
+function fetchData() {
+  fetch(SCRIPT_URL)
+    .then(r => r.json())
+    .then(obj => {
+      const scores = obj.Scores || [];
+      UPCOMING = obj.Upcoming || [];
+
+      // Week setting
+      const weekObj = (obj.Settings || []).find(x => x.Key === "Week");
+      WEEK_LABEL = weekObj ? weekObj.Value : "Week";
+
+      // Group by sport
+      DATA = {};
+      scores.forEach(g => {
+        if (!DATA[g.Sport]) DATA[g.Sport] = [];
+        DATA[g.Sport].push({
+          home: g.Home,
+          away: g.Away,
+          home_score: g.HomeScore,
+          away_score: g.AwayScore,
+          live: g.Live === true,
+          period: g.Period,
+          clock: parseClock(g.Clock)
+        });
+      });
+
+      renderTabs();
+      showPanel(0);
+      document.querySelector(".week").innerText = WEEK_LABEL;
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+      document.querySelector(".week").innerText = "Error";
+    });
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  keys = Object.keys(DATA).concat(["Upcoming Games"]);
+
+  keys.forEach((k, i) => {
+    const t = document.createElement("div");
+    t.className = "tab" + (i === 0 ? " active" : "");
+    t.innerText = k;
+    t.onclick = () => showPanel(i);
+    tabs.appendChild(t);
+  });
+}
+
+function showPanel(i) {
+  document.querySelectorAll(".tab").forEach((t,x)=>t.classList.toggle("active", x===i));
+
+  const content = document.getElementById("content");
+  content.innerHTML = "";
+
+  const key = keys[i];
+  let html = "";
+
+  if (key === "Upcoming Games") {
+    html = UPCOMING.map(u =>
+      `<div class="game"><b>${u.Sport}:</b> ${u.Description}</div>`
+    ).join("");
+  } else {
+    html = (DATA[key] || []).map(g => {
+      let line = `<b>${g.home}</b> ${g.home_score} — ${g.away_score} <b>${g.away}</b>`;
+      if (g.live) {
+        const info = [g.period, g.clock].filter(x => x).join(" · ");
+        line += ` <span style="background:#e53935;color:#fff;padding:3px 8px;border-radius:12px;font-weight:bold;margin-left:10px;">LIVE — ${info}</span>`;
+      }
+      return `<div class="game">${line}</div>`;
+    }).join("");
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "panel active";
+  panel.innerHTML = html;
+  content.appendChild(panel);
+}
+
+fetchData();
+setInterval(fetchData, 10000);
+</script>
+
+</body>
+</html>
